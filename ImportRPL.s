@@ -305,6 +305,20 @@ result("Warning: Data-type value changed to float (32 bit)."+"\n")
 
 
 }
+if((data_type_value=="unsigned")|(data_type_value=="signed"))
+{
+
+if(TwoButtonDialog("Data format is integer 32. In order to use the Spectrum Picker, it should be clipped to float 32. Do you what to clip this data to float 32?", "Yes", "No"))
+{
+img3 := RealImage(imagename, 4, size_x, size_y, size_z)  
+img3 = img
+Closeimage(img)
+img := img3
+result("Warning: Data-type value changed to signed float (32 bit)."+"\n")
+}
+
+
+}
 
 
 
