@@ -27,13 +27,12 @@
 // Spelling fixes, added conversion to SI if eV is in units
 // Made 2D images nicer to look at (no longer requires slice tool)
 
-// Last modified 24/06/2012, Luiz Fernando Zagonel
+// Last modified 16/06/2012, Luiz Fernando Zagonel
 // Datatype issue with spectrum picker solved. 
 
 
 Object file_stream
-Image img
-Image img2
+Image img, img2, img3
 String filenameRPL, filenameRAW
 Number size_x, size_y, size_z, pixel_size
 realnumber   scale_x, scale_y,scale_z, origin_x, origin_y, origin_z
