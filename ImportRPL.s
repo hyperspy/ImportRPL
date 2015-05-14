@@ -30,7 +30,24 @@
 // Last modified 16/06/2012, Luiz Fernando Zagonel
 // Datatype issue with spectrum picker solved. 
 
+// Last Modified 14/05/2015, Eric Prestat
+// Convert to EELS of EDS using the "signal" tag
 
+image SpectrumConvertToEELS(image img)
+{
+	img.setstringnote("Meta Data:Format","Spectrum image")
+    img.setstringnote("Meta Data:Signal","EELS")
+    
+	return img
+}
+
+image SpectrumConvertToEDS(image img)
+{
+	img.setstringnote("Meta Data:Format","Spectrum image")
+    img.setstringnote("Meta Data:Signal","X-ray")
+    
+	return img
+}
 
 image OpenRPL(string filenameRPL)
 {
@@ -43,7 +60,7 @@ image OpenRPL(string filenameRPL)
     Number file_RPL, file_RAW
     Number index
     string textline,value,data_type_value,recorded_by_value
-    string width_name_value, height_name_value, depth_name_value
+    string width_name_value, height_name_value, depth_name_value, signal
     string imagename
 
     size_x = size_y = size_z = 1
@@ -164,14 +181,19 @@ image OpenRPL(string filenameRPL)
           data_type_value = data_type_value.left(data_type_value.len()-2)
           }
           
-          
-
     if(textline.find("record-by")!=-1)
           {      
           recorded_by_value = textline.right(textline.len() - 10)
           recorded_by_value = recorded_by_value.left(recorded_by_value.len()-2)
           }
 
+	// hyperspy specific information.
+	// Signal type, i. e. EDS_SEM, EDS_TEM, EELS or image
+    if(textline.find("signal")!=-1)
+          {
+          signal = textline.right(textline.len() - 7)
+          signal = signal.left(signal.len()-2)
+          }
           
     }
     //Riple file reading is finished
@@ -322,11 +344,7 @@ image OpenRPL(string filenameRPL)
     result("Warning: Data-type value changed to signed float (32 bit)."+"\n")
     }
 
-
     }
-
-
-
 
     //Add scale calibration and format to the image
     if(size_x>1)
@@ -350,13 +368,17 @@ image OpenRPL(string filenameRPL)
 	    img.ImageSetDimensionUnitString(2, units_z )   
     }
 
-
-    //if (units_x=="eV" || units_y=="eV" || units_z=="eV") {
-    //    img.setstringnote("Meta Data:Format","Spectrum image")
-    //    img.setstringnote("Meta Data:Signal","EELS")
-    //    }
-
-    // img.ShowImage()
+	//Add corresponding tag for EELS or EDS
+	if(signal=="EDS_SEM" || signal=="EDS_TEM")
+	{
+		img = SpectrumConvertToEDS(img)
+		result("Dataset converted to EDS\n")
+	}
+	if(signal=="EELS")
+	{
+		img = SpectrumConvertToEELS(img)
+		result("Dataset converted to EELS\n")
+	}
 
     //if(size_x==1) //if the data is a collection of spectra, display in raster mode
     //setDisplayType(img,4)
@@ -372,6 +394,6 @@ string filenameRPL
 image img
 //Prompt the user to locate the Ripple file
 If (!OpenDialog(filenameRPL)) Exit(0)
-img = OpenRPL(filenameRPL);
+img := OpenRPL(filenameRPL);
 img.ShowImage()
 
