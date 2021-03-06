@@ -1,11 +1,12 @@
 //
-// Copyright 2011 Luiz Fernando Zagonel
-// ImportRPL is free software; you can redistribute it and/or modify
+// Copyright 2011-2012 Luiz Fernando Zagonel, Mike Saharan
+// Copyright 2015 Eric Prestat
+// batch_convertRPL is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
 // (at your option) any later version.
 
-// ImportRPL is distributed in the hope that it will be useful,
+// batch_convertRPL is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
@@ -15,11 +16,12 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  
 // USA
 
-//  This script is designed to import Ripple files into Digital Micrograph. 
-//  It is used to easy data transit between DigitalMicrograph and Hyperspy
-//  and Esprit 1.9.
-//  The script will ask for 2 files: 
-//          1- the riple file with the data  format and calibrations 
+//  This script is designed to batch convert Ripple files into Digital
+//  Micrograph files. It is used to easy data transit between
+//  DigitalMicrograph and Hyperspy. 
+//  The script will ask for the folder containing the Ripple files to convert.
+//  In each folder and subfolder(s), it will search for: 
+//          1- the riple file with the data format and calibrations 
 //          2- the data itself in raw format.
 //          IF a file with the same name and path as the riple file exits
 //          with raw or bin extension it is opened directly without prompting
@@ -219,7 +221,7 @@ image OpenRPL(string filenameRPL)
           
     }
     // Wrong formatting of the RPL file by Esprit: easy workaround is to
-	// assumed default parameter...
+    // assumed default parameter...
     if(openfromEsprit==1)
     {
 	  result("Reading RPL file created by Esprit\n")
@@ -425,15 +427,57 @@ image OpenRPL(string filenameRPL)
     return img;
 }
 
-void importRPL()
-{    
-	string filenameRPL
-	image img
-	//Prompt the user to locate the Ripple file
-	If (!OpenDialog(filenameRPL)) Exit(0)
-	img := OpenRPL(filenameRPL);
-	img.ShowImage()
+void ConvertRPLtoDM3WithinDirectory(string sourcepath)
+{
+	TagGroup tgFiles = GetFilesInDirectory(sourcepath, 1);
+	number i, count = tgFiles.TagGroupCountTags( );
+
+	// Loop through the directory getting the filenames and opening the images.
+	image Spectrum
+	number incx, incy
+	for(i=0; i<count; ++i)  
+	{
+		String sFileLabel = tgFiles.TagGroupGetTagLabel(i) ; 
+		number type = tgFiles.TagGroupGetTagType(i, 0); 	 
+		if(type==0)
+		{  
+			TagGroup tgInner;
+			TagGroupGetIndexedTagAsTagGroup(tgFiles, i, tgInner);
+			String ImageFileName;
+			TagGroupGetTagAsString(tgInner, "Name", ImageFileName);
+			String ImageExt = PathExtractExtension(ImageFileName, 0);
+			// Files are screened so that only those with the appropriate extensions are opened
+			if(imageext=="rpl")
+			{
+				string full_file_path = sourcepath+imagefilename
+				Spectrum:=OpenRPL(full_file_path)
+				Spectrum.SaveAsGatan(full_file_path.left(full_file_path.len()-4))
+			}
+		}
+	}
+}
+
+void batch_convertRPL()
+{
+	string localpath = GetApplicationDirectory(2, 0)
+	string sourcepathbase
+	If(!GetDirectoryDialog("Select base folder", localpath, sourcepathbase)) Exit(0)
+
+	TagGroup tgDirectories = GetFilesInDirectory(sourcepathbase, 2)
+	number i_dir, count_dir = tgDirectories.TagGroupCountTags()
+
+	ConvertRPLtoDM3WithinDirectory(sourcepathbase)
+	// Loop through the directories.
+	for(i_dir; i_dir < count_dir; ++i_dir)
+	{
+		TagGroup tgInnerDirectories
+		TagGroupGetIndexedTagAsTagGroup(tgDirectories, i_dir, tgInnerDirectories)
+		String DirectoryName
+		TagGroupGetTagAsString(tgInnerDirectories, "Name", DirectoryName)
+		result("In folder: "+DirectoryName+"\n")
+		ConvertRPLtoDM3WithinDirectory(sourcepathbase+DirectoryName+"\\")
+	}
 }
 
 // Main program starts here
-importRPL()
+batch_convertRPL()
